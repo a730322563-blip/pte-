@@ -17,19 +17,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential bc flex bison libssl-dev libelf-dev \
-            python3 git ccache wget gnupg
-
-      - name: Install clang-17
-        run: |
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/llvm.asc
-          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" | sudo tee /etc/apt/sources.list.d/llvm-17.list
-          sudo apt-get update
-          sudo apt-get install -y clang-17 lld-17 llvm-17
-          sudo ln -sf /usr/bin/clang-17 /usr/bin/clang
-          sudo ln -sf /usr/bin/clang++-17 /usr/bin/clang++
-          sudo ln -sf /usr/bin/ld.lld-17 /usr/bin/ld.lld
-          sudo ln -sf /usr/bin/llc-17 /usr/bin/llc
-          clang --version
+            python3 git ccache gcc-aarch64-linux-gnu
 
       - name: Download Android Common Kernel (android15-6.6)
         run: |
@@ -40,19 +28,12 @@ jobs:
       - name: Configure and prepare kernel
         run: |
           cd kernel-src
-          make ARCH=arm64 LLVM=1 LLVM_IAS=1 gki_defconfig
-          make ARCH=arm64 LLVM=1 LLVM_IAS=1 modules_prepare
-
-      - name: Patch incompatible flags
-        run: |
-          cd kernel-src
-          grep -rl " -fconserve-stack" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/ -fconserve-stack//g'
-          grep -rl "bounds-strict" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/bounds-strict/bounds/g'
-          echo "Patch done"
+          make ARCH=arm64 gki_defconfig
+          make ARCH=arm64 modules_prepare
 
       - name: Build pte_track.ko
         run: |
-          make KDIR=kernel-src LLVM=1 LLVM_IAS=1 ARCH=arm64 KCFLAGS="-Wno-unknown-warning-option"
+          make KDIR=kernel-src ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
           ls -l pte_track.ko
 
       - name: Upload artifact
