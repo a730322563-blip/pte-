@@ -19,7 +19,7 @@ jobs:
             build-essential bc flex bison libssl-dev libelf-dev \
             python3 git ccache wget gnupg
 
-      - name: Install clang-17 (android15-6.6 requires clang 17+)
+      - name: Install clang-17
         run: |
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/llvm.asc
           echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" | sudo tee /etc/apt/sources.list.d/llvm-17.list
@@ -41,6 +41,18 @@ jobs:
         run: |
           cd kernel-src
           make ARCH=arm64 gki_defconfig
+
+      - name: Disable incompatible configs (external clang)
+        run: |
+          cd kernel-src
+          grep -E "UBSAN|CONSERVE|GKI_HACKS" .config | head -20 || true
+          scripts/config --disable UBSAN
+          scripts/config --disable UBSAN_BOUNDS
+          scripts/config --disable UBSAN_TRAP
+          scripts/config --disable UBSAN_NULL
+          scripts/config --disable UBSAN_LOCAL_BOUNDS
+          scripts/config --disable CC_HAS_CONSERVE_STACK
+          make ARCH=arm64 olddefconfig
 
       - name: Build pte_track.ko
         run: |
