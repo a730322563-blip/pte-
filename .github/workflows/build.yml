@@ -42,15 +42,13 @@ jobs:
           cd kernel-src
           make ARCH=arm64 gki_defconfig
 
-      - name: Patch kernel tree for external clang
+      - name: Patch only incompatible flags (safe sed)
         run: |
           cd kernel-src
-          # 1. 去掉 clang 不支持的 -fconserve-stack
-          grep -rl "fconserve-stack" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/ -fconserve-stack//g'
-          # 2. bounds-strict 降级为标准 bounds
+          # 只删独立的 -fconserve-stack（前面带空格，不会误伤 -Wno-error）
+          grep -rl " -fconserve-stack" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/ -fconserve-stack//g'
+          # bounds-strict 降级为 bounds（安全替换）
           grep -rl "bounds-strict" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/bounds-strict/bounds/g'
-          # 3. 去掉 -Werror（GCC 特有警告选项 clang 不认识，去掉 Werror 后只警告不报错）
-          grep -rl "Werror" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/-Werror//g'
           echo "Patch done"
 
       - name: Build pte_track.ko
