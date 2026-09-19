@@ -17,7 +17,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential bc flex bison libssl-dev libelf-dev \
-            python3 clang llvm lld git ccache
+            python3 git ccache wget gnupg
+
+      - name: Install clang-17 (android15-6.6 requires clang 17+)
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/llvm.asc
+          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" | sudo tee /etc/apt/sources.list.d/llvm-17.list
+          sudo apt-get update
+          sudo apt-get install -y clang-17 lld-17 llvm-17
+          sudo ln -sf /usr/bin/clang-17 /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-17 /usr/bin/clang++
+          sudo ln -sf /usr/bin/ld.lld-17 /usr/bin/ld.lld
+          sudo ln -sf /usr/bin/llc-17 /usr/bin/llc
+          clang --version
 
       - name: Download Android Common Kernel (android15-6.6)
         run: |
