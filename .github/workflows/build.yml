@@ -28,8 +28,13 @@ jobs:
       - name: Configure and prepare kernel
         run: |
           cd kernel-src
-          make ARCH=arm64 gki_defconfig
-          make ARCH=arm64 modules_prepare
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- gki_defconfig
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- modules_prepare
+
+      - name: Fix Makefile for GCC (remove hardcoded LLVM=1)
+        run: |
+          sed -i 's/ LLVM=1 LLVM_IAS=1//g' Makefile
+          cat Makefile
 
       - name: Build pte_track.ko
         run: |
