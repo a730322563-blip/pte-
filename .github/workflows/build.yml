@@ -42,19 +42,20 @@ jobs:
           cd kernel-src
           make ARCH=arm64 gki_defconfig
 
-      - name: Patch kernel tree - remove incompatible clang flags
+      - name: Patch kernel tree for external clang
         run: |
           cd kernel-src
-          echo "=== Before ==="
-          grep -rn "fconserve-stack\|bounds-strict" scripts/ arch/ Makefile 2>/dev/null | head -10 || true
+          # 1. 去掉 clang 不支持的 -fconserve-stack
           grep -rl "fconserve-stack" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/ -fconserve-stack//g'
+          # 2. bounds-strict 降级为标准 bounds
           grep -rl "bounds-strict" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/bounds-strict/bounds/g'
-          echo "=== After ==="
-          grep -rn "fconserve-stack\|bounds-strict" scripts/ arch/ Makefile 2>/dev/null | head -10 || echo "All incompatible flags removed"
+          # 3. 去掉 -Werror（GCC 特有警告选项 clang 不认识，去掉 Werror 后只警告不报错）
+          grep -rl "Werror" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/-Werror//g'
+          echo "Patch done"
 
       - name: Build pte_track.ko
         run: |
-          make KDIR=kernel-src LLVM=1 LLVM_IAS=1 ARCH=arm64
+          make KDIR=kernel-src LLVM=1 LLVM_IAS=1 ARCH=arm64 KCFLAGS="-Wno-unknown-warning-option"
           ls -l pte_track.ko
 
       - name: Upload artifact
