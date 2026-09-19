@@ -37,17 +37,16 @@ jobs:
             https://android.googlesource.com/kernel/common kernel-src
           du -sh kernel-src
 
-      - name: Configure GKI
+      - name: Configure and prepare kernel
         run: |
           cd kernel-src
-          make ARCH=arm64 gki_defconfig
+          make ARCH=arm64 LLVM=1 LLVM_IAS=1 gki_defconfig
+          make ARCH=arm64 LLVM=1 LLVM_IAS=1 modules_prepare
 
-      - name: Patch only incompatible flags (safe sed)
+      - name: Patch incompatible flags
         run: |
           cd kernel-src
-          # 只删独立的 -fconserve-stack（前面带空格，不会误伤 -Wno-error）
           grep -rl " -fconserve-stack" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/ -fconserve-stack//g'
-          # bounds-strict 降级为 bounds（安全替换）
           grep -rl "bounds-strict" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/bounds-strict/bounds/g'
           echo "Patch done"
 
