@@ -42,17 +42,15 @@ jobs:
           cd kernel-src
           make ARCH=arm64 gki_defconfig
 
-      - name: Disable incompatible configs (external clang)
+      - name: Patch kernel tree - remove incompatible clang flags
         run: |
           cd kernel-src
-          grep -E "UBSAN|CONSERVE|GKI_HACKS" .config | head -20 || true
-          scripts/config --disable UBSAN
-          scripts/config --disable UBSAN_BOUNDS
-          scripts/config --disable UBSAN_TRAP
-          scripts/config --disable UBSAN_NULL
-          scripts/config --disable UBSAN_LOCAL_BOUNDS
-          scripts/config --disable CC_HAS_CONSERVE_STACK
-          make ARCH=arm64 olddefconfig
+          echo "=== Before ==="
+          grep -rn "fconserve-stack\|bounds-strict" scripts/ arch/ Makefile 2>/dev/null | head -10 || true
+          grep -rl "fconserve-stack" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/ -fconserve-stack//g'
+          grep -rl "bounds-strict" . --include="*.mk" --include="Makefile*" --include="Kbuild*" 2>/dev/null | xargs -r sed -i 's/bounds-strict/bounds/g'
+          echo "=== After ==="
+          grep -rn "fconserve-stack\|bounds-strict" scripts/ arch/ Makefile 2>/dev/null | head -10 || echo "All incompatible flags removed"
 
       - name: Build pte_track.ko
         run: |
