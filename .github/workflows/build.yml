@@ -32,7 +32,7 @@ jobs:
 
       - name: Build pte_track.ko
         run: |
-          make KDIR=../kernel-src LLVM=1 LLVM_IAS=1 ARCH=arm64
+          make KDIR=kernel-src LLVM=1 LLVM_IAS=1 ARCH=arm64
           ls -l pte_track.ko
 
       - name: Upload artifact
